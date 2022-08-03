@@ -1,6 +1,8 @@
 /*
   Master Lora Node
 */
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include <SPI.h>              
 #include <LoRa.h>
 
@@ -9,6 +11,32 @@
 #define rst 14  //GPIO 14
 #define dio0 4  //GPIO 4
 
+
+//Setting up WiFi connectivity.
+const char* ssid = "hamza";
+const char* PASSWORD = "12345678";
+
+//setting up credentials for dataBase which in our case google excel sheets
+const char* APP_SERVER = "script.google.com";
+const char* key = "AKfycbz0RrOwM1eoqAZckkSjgMm4QiPVTIKIttz-_QBXyIwQT15THQ2YMwI85ARof0DGcme1-Q";
+             
+
+//function for uploading data to the dataBase for monitoring
+void accessToGoogleSheets(String reading, String value) 
+{
+  HTTPClient http;
+  String URL = "https://script.google.com/macros/s/";
+  URL += key;
+  URL += "/exec?";
+  URL += reading;
+  URL +="=";
+  URL += value;
+  http.begin(URL);
+  http.GET();
+}
+
+
+//assigning addresses to the  gateway and senders
 byte MasterNode = 0xFF;
 byte NodeA = 0xBB;
 byte NodeB = 0xCC;
@@ -16,7 +44,12 @@ byte NodeB = 0xCC;
 String SenderNode = "";
 String outgoingRequestForData;              // outgoingRequestForData message
 
+//varriable for storing and for sending data to cloud  
 String incomingValues = "";
+String currentMain = "";
+String currentA = "";
+String currentB = "";
+String currentC = ""; 
 
 // Tracks the time since last event fired
 unsigned long previousMillis = 0;
@@ -28,12 +61,13 @@ int Secs = 0;
 
 void setup() 
 {
-  Serial.begin(9600);                   // initialize serial
-  delay(500);
-  while (!Serial);
   LoRa.setPins(nss, rst, dio0);
   if (!LoRa.begin(433E6)) 
       while (1);
+  WiFi.begin(ssid, PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+      delay(100);   
+      
 }
 
 void loop() {
@@ -42,21 +76,21 @@ void loop() {
   if ((unsigned long)(currentsecs - previoussecs) >= interval) 
   {
     Secs = Secs + 1;
-    if ( Secs >= 11 )
+    if ( Secs >= 20 )
       Secs = 0;
     
-    if ( (Secs >= 1) && (Secs <= 5) )
+    if ( (Secs >= 1) && (Secs <= 10) )
     {
-      if (Secs == 3)
+      if (Secs == 5)
       {
       String message = "10";
       sendMessage(message, MasterNode, NodeA);
       }
     }
 
-    if ( (Secs >= 6 ) && (Secs <= 10))
+    if ( (Secs >= 11 ) && (Secs <= 20))
     {
-      if (Secs == 8)
+      if (Secs == 15)
       {
         String message = "20";
         sendMessage(message, MasterNode, NodeB);
@@ -91,7 +125,27 @@ void onReceive(int packetSize)
   incomingValues = "";
   while (LoRa.available()) 
     incomingValues += (char)LoRa.read();      //reading datamessage
-  Serial.println(incomingValues);
+  if(sender == NodeA)
+  {
+      int pos1 = incomingValues.indexOf('/');
+      int pos2 = incomingValues.indexOf('#');
+      currentB = incomingValues.substring(0, pos1);
+      accessToGoogleSheets("currentB", currentB);
+      currentC = incomingValues.substring(pos1 + 1, pos2);
+      accessToGoogleSheets("currentC", currentC);
+  }
+  if(sender == NodeB)
+  {
+      int pos1 = incomingValues.indexOf('/');
+      int pos2 = incomingValues.indexOf('#');
+      currentMain = incomingValues.substring(0, pos1);
+      accessToGoogleSheets("currentMain", currentMain);
+      currentA = incomingValues.substring(pos1 + 1, pos2);
+      accessToGoogleSheets("currentA", currentA);
+      Serial.print(currentMain);
+   }
+      
+  
   
 
   if (incomingValuesLength != incomingValues.length())    // check length for error

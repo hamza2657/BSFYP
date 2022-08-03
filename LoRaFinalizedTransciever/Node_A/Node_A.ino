@@ -1,6 +1,5 @@
 /*
   Lora NodeA
-
   Current value below 0.25 is not measurable.
 */
 #include <SPI.h>              // include libraries
@@ -32,8 +31,6 @@ String currentReadings = "";
 
 void setup() 
 {
-  Serial.begin(9600);                   // initialize serial
-  while (!Serial);
   LoRa.setPins(nss, rst, dio0);
   if (!LoRa.begin(433E6)) 
     while (1);
@@ -72,10 +69,10 @@ void onReceive(int packetSize) {
   {
     float house2 = emon1.calcIrms(1480);  
     float house3 = emon2.calcIrms(1480);
-    currentReadings = "Node_A/";
-    currentReadings +=  house2;
-    currentReadings += "/"; 
-    currentReadings += house3;
+    currentReadings = house2;
+    currentReadings +=  "/";
+    currentReadings += house3; 
+    currentReadings += "#";
     sendMessage(currentReadings, MasterNode, NodeA);
     delay(100);
     currentReadings = "";

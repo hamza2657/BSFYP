@@ -71,10 +71,10 @@ void onReceive(int packetSize) {
   {
     float Main   = emon1.calcIrms(1480);  
     float house1 = emon2.calcIrms(1480);
-    currentReadings = "Node_B/";
-    currentReadings +=  Main;
-    currentReadings += "/"; 
-    currentReadings += house1;
+    currentReadings = Main;
+    currentReadings +=  "/";
+    currentReadings += house1; 
+    currentReadings += "#";
     sendMessage(currentReadings, MasterNode, NodeB);
     delay(100);
     currentReadings = "";
