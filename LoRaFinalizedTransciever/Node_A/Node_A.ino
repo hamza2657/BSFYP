@@ -1,29 +1,45 @@
 /*
-  Lora Node1
+  Lora NodeA
+
+  Current value below 0.25 is not measurable.
 */
 #include <SPI.h>              // include libraries
 #include <LoRa.h>
+#include <EmonLib.h>
 
-#define ss 5
+//pin configuration for LoRa SX-1278
+#define nss 5
 #define rst 14
 #define dio0 2
 
+//pins for sensors connected to Node A for currunt reading
+#define H_2 34
+#define H_3 27
+
+EnergyMonitor emon1;                   
+EnergyMonitor emon2;
+
+
 String outgoingSendingMessage;              // outgoingSendingMessage message
 
+//assign addresses for LoRa Transmission from master noode to others node and vice versa
 byte MasterNode = 0xFF;
-byte Node1 = 0xBB;
+byte NodeA = 0xBB;
 
 
 
-String Mymessage = "";
+String currentReadings = "";
 
 void setup() 
 {
   Serial.begin(9600);                   // initialize serial
   while (!Serial);
-  LoRa.setPins(ss, rst, dio0);
+  LoRa.setPins(nss, rst, dio0);
   if (!LoRa.begin(433E6)) 
     while (1);
+
+   emon1.current(H_2, 4.9);
+   emon2.current(H_3, 4.9);
 }
 
 void loop() 
@@ -49,25 +65,30 @@ void onReceive(int packetSize) {
   
 
   // if the recipient isn't this device or broadcast,
-  if (recipient != Node1 && sender != MasterNode) 
+  if (recipient != NodeA && sender != MasterNode) 
     return;                             // skip rest of function
   int Val = incoming.toInt();
   if (Val == 10)
   {
-    Mymessage = "Node 1";
-    sendMessage(Mymessage, MasterNode, Node1);
+    float house2 = emon1.calcIrms(1480);  
+    float house3 = emon2.calcIrms(1480);
+    currentReadings = "Node_A/";
+    currentReadings +=  house2;
+    currentReadings += "/"; 
+    currentReadings += house3;
+    sendMessage(currentReadings, MasterNode, NodeA);
     delay(100);
-    Mymessage = "";
+    currentReadings = "";
   }
   else
     return;
 
 }
-void sendMessage(String outgoingSendingMessage, byte MasterNode, byte Node1) 
+void sendMessage(String outgoingSendingMessage, byte MasterNode, byte NodeA) 
 {
   LoRa.beginPacket();                            // start packet
   LoRa.write(MasterNode);                        // add destination address
-  LoRa.write(Node1);                             // add sender address
+  LoRa.write(NodeA);                             // add sender address
   LoRa.write(outgoingSendingMessage.length());   // add payload length
   LoRa.print(outgoingSendingMessage);            // add payload
   LoRa.endPacket();                              // finish packet and send it

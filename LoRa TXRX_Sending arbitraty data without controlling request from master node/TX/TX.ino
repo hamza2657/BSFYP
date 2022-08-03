@@ -18,15 +18,16 @@ float value = 0;
 
 float readsensor()
 {
-  //if( sensornumber == 1)
-  //{
+  if(counter == 1)
+  {
    Irms = elemon_1.calcIrms(1480); 
-  //}
-//  if( sensornumber == 2)
-//  {
-//   Irms = elemon_2.calcIrms(1480); 
-//  
-//  }
+   Serial.print("Irms 1 ");
+  }
+  if(counter == 2)
+  {
+   Irms = elemon_2.calcIrms(1480); 
+    Serial.print("Irms 1 ");
+  }
   return Irms;
 }
 
@@ -69,20 +70,20 @@ void setup()
 
 //*****************Sensor*****************
 
-  elemon_1.current(36, 4.8);
-  elemon_2.current(39, 4.8); 
+  elemon_1.current(34, 0.9);
+  elemon_2.current(39, 0.93); 
 }
  
 void loop() 
 {
-  value = readsensor(counter);
-  //Serial.println(value);
-  //delay(100);
-  //transmitter ();
+  value = readsensor();
+  Serial.println(value);
+  delay(100);
+//  transmitter ();
   delay(2000);
   
 
-  //counter++;
-  //if (counter == 3)
-  //counter == 1; 
+  counter++;
+  if (counter == 3)
+  counter == 1; 
 }

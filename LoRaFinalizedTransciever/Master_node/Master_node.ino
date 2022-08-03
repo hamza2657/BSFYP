@@ -10,8 +10,8 @@
 #define dio0 4  //GPIO 4
 
 byte MasterNode = 0xFF;
-byte Node1 = 0xBB;
-byte Node2 = 0xCC;
+byte NodeA = 0xBB;
+byte NodeB = 0xCC;
 
 String SenderNode = "";
 String outgoingRequestForData;              // outgoingRequestForData message
@@ -47,17 +47,23 @@ void loop() {
     
     if ( (Secs >= 1) && (Secs <= 5) )
     {
+      if (Secs == 3)
+      {
       String message = "10";
-      sendMessage(message, MasterNode, Node1);
+      sendMessage(message, MasterNode, NodeA);
+      }
     }
 
     if ( (Secs >= 6 ) && (Secs <= 10))
     {
-
-      String message = "20";
-      sendMessage(message, MasterNode, Node2);
-    }
-
+      if (Secs == 8)
+      {
+        String message = "20";
+        sendMessage(message, MasterNode, NodeB);
+      }
+      else
+       return;
+     }
     previoussecs = currentsecs;
   }
 
@@ -82,8 +88,7 @@ void onReceive(int packetSize)
   int recipient = LoRa.read();          // recipient address
   byte sender = LoRa.read();            // sender address
   byte incomingValuesLength = LoRa.read();    // incomingValues msg length
-
-      incomingValues = "";
+  incomingValues = "";
   while (LoRa.available()) 
     incomingValues += (char)LoRa.read();      //reading datamessage
   Serial.println(incomingValues);
@@ -93,7 +98,7 @@ void onReceive(int packetSize)
     return;                                   // skip rest of function
   
 
-  if (sender != Node1 &&sender!= Node2 && recipient != MasterNode) 
+  if (sender != NodeA &&sender!= NodeB && recipient != MasterNode) 
     return;                             // skip rest of function
   
 }
