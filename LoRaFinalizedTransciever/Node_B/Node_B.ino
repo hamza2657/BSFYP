@@ -11,8 +11,8 @@
 #define dio0 2
 
 //pins for sensors connected to Node A for currunt reading
-#define H_1 34
-#define main 27
+#define H_2 34
+#define H_3 27
 
 EnergyMonitor emon1;                   
 EnergyMonitor emon2;
@@ -33,8 +33,8 @@ void setup()
   if (!LoRa.begin(433E6)) 
     while (true);
 
-  emon1.current(main, 4.9);
-  emon2.current(H_1, 4.9);
+  emon1.current(H_2, 4.9);
+  emon2.current(H_3, 4.9);
   
 }
 
@@ -45,6 +45,8 @@ void loop()
 }
 
 void onReceive(int packetSize) {
+  float extra_1 = emon1.calcIrms(1480);  
+  float extra_2 = emon2.calcIrms(1480);
   if (packetSize == 0) 
     return;          // if there's no packet, return
 
@@ -69,11 +71,11 @@ void onReceive(int packetSize) {
   int Val = incoming.toInt();
   if (Val == 20)
   {
-    float Main   = emon1.calcIrms(1480);  
-    float house1 = emon2.calcIrms(1480);
-    currentReadings = Main;
+    float house2   = emon1.calcIrms(1480);  
+    float house3 = emon2.calcIrms(1480);
+    currentReadings = house2;
     currentReadings +=  "/";
-    currentReadings += house1; 
+    currentReadings += house3; 
     currentReadings += "#";
     sendMessage(currentReadings, MasterNode, NodeB);
     delay(100);

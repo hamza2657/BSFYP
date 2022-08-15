@@ -5,6 +5,16 @@
 #include <HTTPClient.h>
 #include <SPI.h>              
 #include <LoRa.h>
+#include <NTPClient.h>
+#include <WiFiUDP.h>
+
+WiFiUDP ntpUDP;
+NTPClient timeClient(ntpUDP, "in.pool.ntp.org", 18000, 60000);
+
+
+
+
+boolean flag1 = false,flag2 = false;
 
 
 #define nss 5  //GPIO 5
@@ -18,21 +28,40 @@ const char* PASSWORD = "12345678";
 
 //setting up credentials for dataBase which in our case google excel sheets
 const char* APP_SERVER = "script.google.com";
-const char* key = "AKfycbz0RrOwM1eoqAZckkSjgMm4QiPVTIKIttz-_QBXyIwQT15THQ2YMwI85ARof0DGcme1-Q";
+const char* key = "AKfycbx5xg6qZLJedWXvxT22P7kiQEIm3NV8IJ7V2zDZ8KWrAYsdxZnvoindoJS6mVurpbzOww";
+String serverTime="";
+String distPnt = "";
+String path1= "";
+String path2= "";
+String path3 = "";
+float theft;
              
 
 //function for uploading data to the dataBase for monitoring
-void accessToGoogleSheets(String reading, String value) 
+void accessToGoogleSheets() 
 {
   HTTPClient http;
   String URL = "https://script.google.com/macros/s/";
   URL += key;
   URL += "/exec?";
-  URL += reading;
-  URL +="=";
-  URL += value;
+  URL += "time=";
+  URL += serverTime;
+  URL +="&distributionPoint=";
+  URL += distPnt;
+  URL += "&path1=";
+  URL += path1;
+  URL += "&path2=";
+  URL += path2;
+  URL += "&path3=";
+  URL += path3;
+  URL += "&theft=";
+  URL += theft;
   http.begin(URL);
-  http.GET();
+  int code = http.GET();
+  if(code == HTTP_CODE_OK)
+  {
+    digitalWrite(2,HIGH);
+  }
 }
 
 
@@ -61,43 +90,38 @@ int Secs = 0;
 
 void setup() 
 {
+  pinMode(2,OUTPUT);
+  WiFi.begin(ssid, PASSWORD);
+  while (WiFi.status() != WL_CONNECTED)
+      delay(100);
+  timeClient.begin();
   LoRa.setPins(nss, rst, dio0);
   if (!LoRa.begin(433E6)) 
       while (1);
-  WiFi.begin(ssid, PASSWORD);
-  while (WiFi.status() != WL_CONNECTED)
-      delay(100);   
-      
 }
 
 void loop() {
+  digitalWrite(2,LOW);
   currentMillis = millis();
   currentsecs = currentMillis / 1000;
   if ((unsigned long)(currentsecs - previoussecs) >= interval) 
   {
     Secs = Secs + 1;
-    if ( Secs >= 20 )
+    if ( Secs >= 5 )
       Secs = 0;
     
-    if ( (Secs >= 1) && (Secs <= 10) )
+    if ( (Secs >= 1) && (Secs <= 2) )
     {
-      if (Secs == 5)
-      {
+      
       String message = "10";
       sendMessage(message, MasterNode, NodeA);
-      }
     }
 
-    if ( (Secs >= 11 ) && (Secs <= 20))
+    else if ( (Secs >= 3 ) && (Secs <= 4))
     {
-      if (Secs == 15)
-      {
-        String message = "20";
-        sendMessage(message, MasterNode, NodeB);
-      }
-      else
-       return;
-     }
+      String message = "20";
+      sendMessage(message, MasterNode, NodeB);
+    }
     previoussecs = currentsecs;
   }
 
@@ -122,6 +146,7 @@ void onReceive(int packetSize)
   int recipient = LoRa.read();          // recipient address
   byte sender = LoRa.read();            // sender address
   byte incomingValuesLength = LoRa.read();    // incomingValues msg length
+  
   incomingValues = "";
   while (LoRa.available()) 
     incomingValues += (char)LoRa.read();      //reading datamessage
@@ -129,30 +154,32 @@ void onReceive(int packetSize)
   {
       int pos1 = incomingValues.indexOf('/');
       int pos2 = incomingValues.indexOf('#');
-      currentB = incomingValues.substring(0, pos1);
-      accessToGoogleSheets("currentB", currentB);
-      currentC = incomingValues.substring(pos1 + 1, pos2);
-      accessToGoogleSheets("currentC", currentC);
+      path1 = incomingValues.substring(0, pos1);
+      distPnt = incomingValues.substring(pos1 + 1, pos2);
+      flag1 = true;
   }
   if(sender == NodeB)
   {
       int pos1 = incomingValues.indexOf('/');
       int pos2 = incomingValues.indexOf('#');
-      currentMain = incomingValues.substring(0, pos1);
-      accessToGoogleSheets("currentMain", currentMain);
-      currentA = incomingValues.substring(pos1 + 1, pos2);
-      accessToGoogleSheets("currentA", currentA);
-      Serial.print(currentMain);
-   }
-      
-  
-  
-
-  if (incomingValuesLength != incomingValues.length())    // check length for error
-    return;                                   // skip rest of function
-  
-
-  if (sender != NodeA &&sender!= NodeB && recipient != MasterNode) 
-    return;                             // skip rest of function
-  
+      path2 = incomingValues.substring(0, pos1);
+      path3 = incomingValues.substring(pos1 + 1, pos2);
+      flag2 = true;
+  }
+  if(flag1 == true && flag2 == true)
+  {
+    theft = (path1.toFloat() + path2.toFloat() + path3.toFloat()) - distPnt.toFloat();
+    for(int i = 0 ; i<=5 ; i++ )
+    {
+      timeClient.update();
+      String dummp = timeClient.getFormattedTime();
+      if(i == 5)
+      serverTime = timeClient.getFormattedTime();
+    }
+    accessToGoogleSheets();
+    flag1 = false;
+    flag2 = false;
+    
+  }
+   
 }

@@ -1,0 +1,113 @@
+function doGet(e) {
+
+    let id = '1IWc_ypDB-MKluEt1rahpokFosBrbpwx0O3fNY3OT8I4'; 
+    var sheetName = 'sensorData'; 
+    var result;
+    
+
+    // e.parameter has received GET parameters, i.e. current measurment from differnt sensors
+    if (e.parameter == undefined) 
+    {
+        result = 'Parameter undefined';
+    } 
+    else {
+            var sheet = SpreadsheetApp.openById(id).getSheetByName(sheetName);
+            var d = new Date();
+            if(e.parameter.currentMain != null  )
+            {
+              let rowData = [];
+              let val;
+              let lastRow = sheet.getLastRow();
+              let range = sheet.getRange("C" + lastRow);
+              if (range.getValue() !== "") 
+                {
+                  val = lastRow; 
+                } 
+              else 
+                {
+                  val = range.getNextDataCell(SpreadsheetApp.Direction.UP).getRow();
+                } 
+              let newRow = val+1;
+              rowData[0] = d.toLocaleDateString();
+              rowData[1] = d.toLocaleTimeString();
+              rowData[2] = e.parameter.currentMain;
+              // 1 x rowData.length cells from (newRow, 1) cell are specified
+              let newRange = sheet.getRange(newRow, 1, 1, rowData.length);
+              // insert data to the target cells
+              newRange.setValues([rowData]);
+              
+              result =  'Ok';
+            }
+            else if(e.parameters.currentA != null)
+            {
+              let rowData = [];
+              let val;
+              let lastRow = sheet.getLastRow();
+              let range = sheet.getRange("F" + lastRow);
+              if (range.getValue() !== "") 
+                {
+                  val = lastRow; 
+                } 
+              else 
+                {
+                  val = range.getNextDataCell(SpreadsheetApp.Direction.UP).getRow();
+                } 
+              
+              let newRow = val + 1;
+              rowData[0] = d.toLocaleDateString();
+              rowData[1] = d.toLocaleTimeString();
+              rowData[2] = e.parameter.currentA;
+              let newRange = sheet.getRange(newRow, 4, 1, rowData.length);
+              newRange.setValues([rowData]);
+              result =  'Ok';
+            }
+            else if(e.parameters.currentB != null)
+            {
+              let rowData = [];     
+              let val;
+              let lastRow = sheet.getLastRow();
+              let range = sheet.getRange("I" + lastRow);
+              if (range.getValue() !== "") 
+                {
+                  val = lastRow; 
+                } 
+              else 
+                {
+                  val = range.getNextDataCell(SpreadsheetApp.Direction.UP).getRow();
+                } 
+              let newRow = val + 1;
+              rowData[0] = d.toLocaleDateString();
+              rowData[1] = d.toLocaleTimeString();
+              rowData[2] = e.parameter.currentB;
+              let newRange = sheet.getRange(newRow, 7, 1, rowData.length);
+              newRange.setValues([rowData]);
+              result =  'Ok';
+            }
+            else
+            {
+              let rowData = [];     
+              let val;
+              let lastRow = sheet.getLastRow();
+              let range = sheet.getRange("L" + lastRow);
+              if (range.getValue() !== "") 
+                {
+                  val = lastRow; 
+                } 
+              else 
+                {
+                  val = range.getNextDataCell(SpreadsheetApp.Direction.UP).getRow();
+                } 
+              let newRow = val + 1;
+              rowData[0] = d.toLocaleDateString();
+              rowData[1] = d.toLocaleTimeString();
+              rowData[2] = e.parameter.currentC;
+              let newRange = sheet.getRange(newRow, 10, 1, rowData.length);
+              newRange.setValues([rowData]);
+              result =  'Ok';
+
+            }
+            
+    }
+
+    return ContentService.createTextOutput(result);
+}
