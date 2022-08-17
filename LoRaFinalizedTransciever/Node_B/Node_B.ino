@@ -2,94 +2,110 @@
   Lora NodeB
   Current value below 0.25 is not measurable.
 */
-#include <SPI.h>              // include libraries
+
+// including libraries
+#include <SPI.h>
 #include <LoRa.h>
 #include <EmonLib.h>
 
+//pin configuration for LoRa SX-1278
 #define nss 5
 #define rst 14
 #define dio0 2
 
-//pins for sensors connected to Node A for currunt reading
+//pins for sensors connected to Node B for currunt reading
 #define H_2 34
 #define H_3 27
 
-EnergyMonitor emon1;                   
+
+
+//taking two instances from the library for our sensor to get values
+EnergyMonitor emon1;
 EnergyMonitor emon2;
 
-int msgcount = 0;
+// Flag set by callback to perform read process in main loop
+volatile bool doRead = false;
 
-String outgoingMessage;              // outgoingMessage message
+
+//assign addresses for LoRa Transmission for master node and Node A and two varriablefor authentication request
 byte MasterNode = 0xFF;
 byte NodeB = 0xCC;
+int recipient;
+byte sender;
 
-
-
+//defining varriable for currunt reading and incoming request from gateway
+String incoming = "";
 String currentReadings = "";
 
-void setup() 
+//variable store currunt readings
+float house3, house2;
+
+void setup()
 {
   LoRa.setPins(nss, rst, dio0);
-  if (!LoRa.begin(433E6)) 
-    while (true);
+  while (!LoRa.begin(433E6))
+    while (1);
 
+  LoRa.onReceive(onReceive);             // register the receive callback
+  LoRa.receive();                        // put the radio into receive mode
+
+  //instances setting up pins and calibration value
   emon1.current(H_2, 4.9);
   emon2.current(H_3, 4.9);
-  
 }
 
-void loop() 
+void loop()
 {
+  //Dummy varriables to get value from sensor for making the value stable
+  float dummy1   = emon1.calcIrms(1480);
+  float dummy2   = emon2.calcIrms(1480);
+
   // parse for a packet, and call onReceive with the result:
-  onReceive(LoRa.parsePacket());
+  if (doRead)
+  {
+    readMessage();
+    doRead = false;               // Set flag back to false so next read will happen only after next ISR event
+    LoRa.onReceive(onReceive);
+    LoRa.receive();               //again put the radio in recieve mode
+  }
 }
 
-void onReceive(int packetSize) {
-  float extra_1 = emon1.calcIrms(1480);  
-  float extra_2 = emon2.calcIrms(1480);
-  if (packetSize == 0) 
-    return;          // if there's no packet, return
-
-  // read packet header bytes:
-  int recipient = LoRa.read();          // recipient address
-  byte sender = LoRa.read();            // sender address
-  byte incomingLength = LoRa.read();    // incoming msg length
-
-  String incoming = "";
-
+void onReceive(int packetSize)
+{
+  if (packetSize == 0)            // if there's no packet, return
+    return;
+  doRead = true;
+}
+void readMessage()
+{
+  incoming = "";
+  recipient = LoRa.read();
+  sender = LoRa.read();
   while (LoRa.available())
     incoming += (char)LoRa.read();
-  if (incomingLength != incoming.length())   // check length for error
-    return;                                  // skip rest of function
-  
-
-  // if the recipient isn't this device or broadcast,
-  if (recipient != NodeB && sender != MasterNode) 
+  if (recipient != NodeB && sender != MasterNode)
     return;                             // skip rest of function
-  
-  
   int Val = incoming.toInt();
-  if (Val == 20)
+  if (Val == 20)                        //check if the request is for the node
   {
-    float house2   = emon1.calcIrms(1480);  
-    float house3 = emon2.calcIrms(1480);
+    house2   = emon1.calcIrms(1480);
+    house3   = emon2.calcIrms(1480);
     currentReadings = house2;
     currentReadings +=  "/";
-    currentReadings += house3; 
+    currentReadings += house3;
     currentReadings += "#";
     sendMessage(currentReadings, MasterNode, NodeB);
-    delay(100);
     currentReadings = "";
-   }
-   else
+  }
+  else
     return;
 }
-void sendMessage(String outgoingMessage, byte MasterNode, byte NodeB) 
+
+void sendMessage(String outgoingMessage, byte MasterNode, byte NodeB)
 {
   LoRa.beginPacket();                         // start packet
   LoRa.write(MasterNode);                     // add destination address
   LoRa.write(NodeB);                          // add sender address
-  LoRa.write(outgoingMessage.length());       // add payload length
   LoRa.print(outgoingMessage);                // add payload
   LoRa.endPacket();                           // finish packet and send it
 }
