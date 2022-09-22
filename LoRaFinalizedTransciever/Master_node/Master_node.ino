@@ -160,7 +160,7 @@ void readMessage()
   }
   if (flag1 == true && flag2 == true)         //checking if data is recieved
   {
-    theft = (path1.toFloat() + path2.toFloat() + path3.toFloat()) - distPnt.toFloat();
+    theft = distPnt.toFloat() - (path1.toFloat() + path2.toFloat() + path3.toFloat());
     accessToGoogleSheets();
     flag1 = false;
     flag2 = false;

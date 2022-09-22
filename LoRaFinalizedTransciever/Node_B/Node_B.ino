@@ -15,7 +15,7 @@
 
 //pins for sensors connected to Node B for currunt reading
 #define H_2 34
-#define H_3 27
+#define H_3 26
 
 
 
@@ -51,7 +51,7 @@ void setup()
 
   //instances setting up pins and calibration value
   emon1.current(H_2, 4.9);
-  emon2.current(H_3, 4.9);
+  emon2.current(H_3, 2.45);
 }
 
 void loop()
@@ -59,8 +59,8 @@ void loop()
   //Dummy varriables to get value from sensor for making the value stable
   float dummy1   = emon1.calcIrms(1480);
   float dummy2   = emon2.calcIrms(1480);
-
-  // parse for a packet, and call onReceive with the result:
+ 
+ // parse for a packet, and call onReceive with the result:
   if (doRead)
   {
     readMessage();
