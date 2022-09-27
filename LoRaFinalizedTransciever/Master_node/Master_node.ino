@@ -23,8 +23,8 @@ boolean flag1 = false, flag2 = false; // flag set for conforming that gate has r
 
 
 //Setting up WiFi connectivity.
-const char* ssid = "QAU";
-const char* PASSWORD = "Abcd1dcbA2";
+const char* ssid = "hamza";
+const char* PASSWORD = "12345678";
 
 //setting up credentials for dataBase which in our case google excel sheets
 const char* APP_SERVER = "script.google.com";
